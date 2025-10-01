@@ -1,0 +1,15 @@
+# build artifacts
+build*/
+bin/
+
+# IDE settings
+.vscode/
+.idea/
+.zed/
+.focus-config
+*.raddbg_project
+
+proto/
+
+*.dylib
+*.dll
