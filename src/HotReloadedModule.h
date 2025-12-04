@@ -1,7 +1,13 @@
 #pragma once
 
-#include "ModuleConfig.h"
 #include "ModuleParams.h"
+
+struct ModuleConfig
+{
+    std::string jai_compiler_path {};
+    std::string wdf_compiler_path {};
+    std::string module_dir {};
+};
 
 struct HotReloadedModule
 {
@@ -54,7 +60,7 @@ struct HotReloadedModule
     Prepare_Proc_Func prepare_proc_func = nullptr;
     using Reset_Proc_Func = void (*) (void*);
     Reset_Proc_Func reset_proc_func = nullptr;
-    using Process_Proc_Func = void (*) (void*, std::span<float>);
+    using Process_Proc_Func = void (*) (void*, float*, int);
     Process_Proc_Func process_proc_func = nullptr;
 
     using Get_Num_Float_Params_Func = int (*)();

@@ -4,19 +4,18 @@
 
 #include "visualizers/Oscilloscope.h"
 
-class ChowProtoPlug;
+class Plugin;
 struct PluginEditor : juce::AudioProcessorEditor
 {
-    explicit PluginEditor (ChowProtoPlug& plugin);
+    explicit PluginEditor (Plugin& plugin);
     ~PluginEditor() override;
 
     void paint (juce::Graphics& g) override;
     void resized() override;
 
-    ChowProtoPlug& plugin;
+    Plugin& plugin;
 
     juce::TextButton recompile_button { "RECOMPILE" };
-    juce::TextButton reconfigure_button { "RECONFIGURE" };
     juce::TextButton settings_button { "SETTINGS" };
 
     struct ConsoleTab : juce::Component

@@ -8,10 +8,13 @@
 #include "visualizers/Oscilloscope.h"
 #include "visualizers/SpectrumAnalyzer.h"
 
-class ChowProtoPlug : public chowdsp::PluginBase<chowdsp::PluginStateImpl<chowdsp::ParamHolder>>
+inline const static auto config_file = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                                           .getChildFile ("ChowdhuryDSP/WDFCompilerPlugin/config.json");
+
+class Plugin : public chowdsp::PluginBase<chowdsp::PluginStateImpl<chowdsp::ParamHolder>>
 {
 public:
-    ChowProtoPlug();
+    Plugin();
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -22,7 +25,6 @@ public:
     void update_config();
 
     Logger logger;
-    ModuleConfig config {};
     ModuleParams params {};
     HotReloadedModule module;
 
@@ -31,5 +33,5 @@ public:
     viz::Spectrum_Analyser output_spectrum;
 
 private:
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ChowProtoPlug)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Plugin)
 };

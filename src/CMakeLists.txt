@@ -12,7 +12,7 @@ function(setup_source_group src_group_name)
 endfunction(setup_source_group)
 
 setup_source_group(SRCS SOURCES
-    ChowProtoPlug.cpp
+    Plugin.cpp
     HotReloadedModule.cpp
     ModuleParams.cpp
     PluginEditor.cpp

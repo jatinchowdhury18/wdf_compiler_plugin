@@ -18,39 +18,36 @@ constexpr auto set_choice_param_tag = "set_choice_param"_sl;
 
 auto get_wdf_source_path (const ModuleConfig& config)
 {
-    // @TODO
-    // return juce::File { config.module_directory }.getChildFile ("main.cpp");
-    return juce::File { ROOT_DIR }.getChildFile ("test/wdf.wdf");
+    const auto module_dir = juce::File { config.module_dir };
+    return module_dir.getChildFile (module_dir.getFileName()).withFileExtension ("wdf");
 }
 
 auto get_wdf_output_path (const ModuleConfig& config)
 {
-    // @TODO
-    // return juce::File { config.module_directory }.getChildFile ("main.cpp");
-    return juce::File { ROOT_DIR }.getChildFile ("test/wdf.h");
+    const auto module_dir = juce::File { config.module_dir };
+    return module_dir.getChildFile (module_dir.getFileName()).withFileExtension ("jai");
 }
 
-auto get_cpp_source_path (const ModuleConfig& config)
+auto get_jai_build_path (const ModuleConfig& config)
 {
-    // @TODO
-    // return juce::File { config.module_directory }.getChildFile ("main.cpp");
-    return juce::File { ROOT_DIR }.getChildFile ("test/main.cpp");
+    const auto module_dir = juce::File { config.module_dir };
+    return module_dir.getChildFile ("build.jai");
 }
 
 auto get_dll_bin_path (const ModuleConfig& config)
 {
-    // @TODO
-    return juce::File { ROOT_DIR }.getChildFile ("test/wdf.dll");
+    const auto module_dir = juce::File { config.module_dir };
+    return module_dir.getChildFile (module_dir.getFileName()).withFileExtension ("dylib");
 }
 
 auto get_compile_command (const ModuleConfig& config)
 {
-    const auto wdf_compile_command = juce::String { "/Users/jatin/ChowDSP/Research/WaveDigitalFilters/wdf_compiler/compiler/wdf_compiler " }
-                                     + get_wdf_source_path ({}).getFullPathName()
-                                     + " " + get_wdf_output_path ({}).getFullPathName();
-    const auto dll_compile_command = juce::String { "/usr/bin/clang --std=c++20 -lstdc++ -shared " }
-                                     + get_cpp_source_path ({}).getFullPathName()
-                                     + " -o " + get_dll_bin_path ({}).getFullPathName();
+    const auto wdf_compile_command = juce::String { config.wdf_compiler_path } + " "
+                                     + get_wdf_source_path (config).getFullPathName()
+                                     + " " + get_wdf_output_path (config).getFullPathName()
+                                     + " -lang jai";
+    const auto dll_compile_command = juce::String { config.jai_compiler_path }
+                                     + " " + get_jai_build_path (config).getFullPathName();
     return wdf_compile_command + " && " + dll_compile_command;
 }
 
@@ -320,7 +317,8 @@ void HotReloadedModule::process (const chowdsp::BufferView<float>& buffer) noexc
                 set_choice_param_func (processor_data[(size_t) ch], static_cast<int> (idx), param->getIndex());
         }
 
-        process_proc_func (processor_data[(size_t) ch], buffer_data);
+        process_proc_func (processor_data[(size_t) ch], buffer_data.data(), (int) buffer_data.size());
+        // process_proc_func (processor_data[(size_t) ch], buffer_data);
     }
 
     if (! chowdsp::BufferMath::sanitizeBuffer (buffer, 10.0f))
