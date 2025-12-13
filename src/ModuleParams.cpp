@@ -1,23 +1,21 @@
 #include "ModuleParams.h"
 
-ModuleParams::ModuleParams()
-    : ParamHolder { nullptr, "Module Params", false }
-{
-}
+ModuleParams::ModuleParams() = default;
 
 void ModuleParams::clear_all_params()
 {
     params_cleared();
+    param_listeners.reset();
     forwarding_params->clearParameterRange (0, num_forward_parameters);
-    // clear(); @TODO!
     float_params.clear();
     choice_params.clear();
-    param_listeners.emplace (*this);
+    holder = nullptr;
 }
 
 void ModuleParams::finished_loading_params()
 {
-    add (float_params, choice_params);
+    holder = std::make_unique<chowdsp::ParamHolder> (nullptr, "Module Params", false);
+    holder->add (float_params, choice_params);
     forwarding_params->setParameterRange (0,
                                           std::min (static_cast<int> (float_params.size() + choice_params.size()),
                                                     num_forward_parameters),
@@ -39,6 +37,6 @@ void ModuleParams::finished_loading_params()
 
                                               return {};
                                           });
-    param_listeners.emplace (*this);
+    param_listeners.emplace (*holder);
     params_added();
 }

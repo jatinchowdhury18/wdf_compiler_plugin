@@ -43,8 +43,11 @@ struct PluginEditor : juce::AudioProcessorEditor
 
         void params_added (ModuleParams& params)
         {
-            params_view.emplace (*params.param_listeners, params);
-            addAndMakeVisible (*params_view);
+            if (params.holder != nullptr)
+            {
+                params_view.emplace (*params.param_listeners, *params.holder);
+                addAndMakeVisible (*params_view);
+            }
             resized();
         }
 

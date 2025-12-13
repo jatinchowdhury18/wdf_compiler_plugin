@@ -12,9 +12,6 @@ constexpr auto process_proc_tag = "process"_sl;
 constexpr auto get_num_float_params_tag = "get_num_float_params"_sl;
 constexpr auto get_float_param_info_tag = "get_float_param_info"_sl;
 constexpr auto set_float_param_tag = "set_float_param"_sl;
-constexpr auto get_num_choice_params_tag = "get_num_choice_params"_sl;
-constexpr auto get_choice_param_info_tag = "get_choice_param_info"_sl;
-constexpr auto set_choice_param_tag = "set_choice_param"_sl;
 
 auto get_wdf_source_path (const ModuleConfig& config)
 {
@@ -94,7 +91,6 @@ void HotReloadedModule::update_config (const ModuleConfig& new_config)
 {
     config = new_config;
 
-    // get_dll_build_dir_path (config).deleteRecursively();
     dll_source_file_changed();
 
     file_watcher.emplace (get_wdf_source_path (config));
@@ -143,10 +139,10 @@ void HotReloadedModule::load_dll()
         return;
     }
 
+    const auto wdf_source_path = get_wdf_source_path (config).getFullPathName();
+    processor_data[0] = create_proc_func (const_cast<char*> (wdf_source_path.toRawUTF8()));
+    processor_data[1] = create_proc_func (const_cast<char*> (wdf_source_path.toRawUTF8()));
     load_parameters();
-
-    processor_data[0] = create_proc_func();
-    processor_data[1] = create_proc_func();
     if (process_spec.sampleRate > 0.0)
     {
         for (auto* data : processor_data)
@@ -164,9 +160,6 @@ bool HotReloadedModule::load_function_table()
     get_num_float_params_func = reinterpret_cast<Get_Num_Float_Params_Func> (dll.getFunction (get_num_float_params_tag));
     get_float_param_info_func = reinterpret_cast<Get_Float_Param_Info_Func> (dll.getFunction (get_float_param_info_tag));
     set_float_param_func = reinterpret_cast<Set_Float_Param> (dll.getFunction (set_float_param_tag));
-    get_num_choice_params_func = reinterpret_cast<Get_Num_Choice_Params_Func> (dll.getFunction (get_num_choice_params_tag));
-    get_choice_param_info_func = reinterpret_cast<Get_Choice_Param_Info_Func> (dll.getFunction (get_choice_param_info_tag));
-    set_choice_param_func = reinterpret_cast<Set_Choice_Param> (dll.getFunction (set_choice_param_tag));
 
     // These functions must be provided! All others are allowed to be nullptr.
     if (create_proc_func == nullptr || destroy_proc_func == nullptr || prepare_proc_func == nullptr || reset_proc_func == nullptr
@@ -201,23 +194,20 @@ void HotReloadedModule::clear_function_table()
     get_num_float_params_func = nullptr;
     get_float_param_info_func = nullptr;
     set_float_param_func = nullptr;
-    get_num_choice_params_func = nullptr;
-    get_choice_param_info_func = nullptr;
-    set_choice_param_func = nullptr;
 }
 
-void HotReloadedModule::load_parameters() const
+void HotReloadedModule::load_parameters()
 {
     using namespace chowdsp::ParamUtils;
     if (get_num_float_params_func != nullptr && get_float_param_info_func != nullptr)
     {
-        const auto num_params = get_num_float_params_func();
+        const auto num_params = get_num_float_params_func (processor_data[0]);
         chowdsp::log ("Module contains {:d} float parameters!", num_params);
         for (int i = 0; i < num_params; ++i)
         {
             char name[128] {};
             float default_value, start, end, center;
-            get_float_param_info_func (i, name, default_value, start, end, center);
+            get_float_param_info_func (processor_data[0], i, name, &default_value, &start, &end, &center);
 
             if (name[0] == '\0')
             {
@@ -231,53 +221,9 @@ void HotReloadedModule::load_parameters() const
                           std::span<float> { range_info },
                           default_value);
             params->float_params.emplace_back (chowdsp::toString (chowdsp::format ("float_param_{}", i)),
-                                               name,
+                                               juce::String { name },
                                                createNormalisableRange (start, end, center),
-                                               default_value,
-                                               &floatValToStringDecimal<4>,
-                                               &stringToFloatVal);
-        }
-    }
-
-    if (get_num_choice_params_func != nullptr && get_choice_param_info_func != nullptr)
-    {
-        const auto num_params = get_num_choice_params_func();
-        chowdsp::log ("Module contains {} choice parameters!", num_params);
-        for (int i = 0; i < num_params; ++i)
-        {
-            char name[128] {};
-            char choices[32][128] {};
-            int default_value {};
-            get_choice_param_info_func (i, name, choices, default_value);
-
-            if (name[0] == '\0')
-            {
-                chowdsp::log ("No param info provided for parameter index: {}", i);
-                continue;
-            }
-
-            juce::StringArray choices_array {};
-            choices_array.ensureStorageAllocated (static_cast<int> (std::size (choices)));
-            for (auto& choice : choices)
-            {
-                if (choice[0] == '\0')
-                    break;
-                choices_array.add (juce::String { choice });
-            }
-
-            std::stringstream ss {};
-            std::copy (std::begin (choices_array),
-                       std::end (choices_array),
-                       std::ostream_iterator<juce::String> (ss, ", "));
-            chowdsp::log ("Adding parameter: {}, {}, default: {}",
-                          name,
-                          std::span { choices_array.begin(), choices_array.end() },
-                          choices[(size_t) default_value]);
-
-            params->choice_params.emplace_back (chowdsp::toString (chowdsp::format ("choice_param_{}", i)),
-                                                name,
-                                                choices_array,
-                                                default_value);
+                                               default_value);
         }
     }
 
@@ -311,14 +257,8 @@ void HotReloadedModule::process (const chowdsp::BufferView<float>& buffer) noexc
             for (const auto [idx, param] : chowdsp::enumerate (params->float_params))
                 set_float_param_func (processor_data[(size_t) ch], static_cast<int> (idx), param->getCurrentValue());
         }
-        if (set_choice_param_func != nullptr)
-        {
-            for (const auto [idx, param] : chowdsp::enumerate (params->choice_params))
-                set_choice_param_func (processor_data[(size_t) ch], static_cast<int> (idx), param->getIndex());
-        }
 
         process_proc_func (processor_data[(size_t) ch], buffer_data.data(), (int) buffer_data.size());
-        // process_proc_func (processor_data[(size_t) ch], buffer_data);
     }
 
     if (! chowdsp::BufferMath::sanitizeBuffer (buffer, 10.0f))

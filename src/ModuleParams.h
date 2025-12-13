@@ -2,7 +2,7 @@
 
 #include <pch.h>
 
-struct ModuleParams : chowdsp::ParamHolder
+struct ModuleParams
 {
     struct ParamForwardingProvider
     {
@@ -16,12 +16,14 @@ struct ModuleParams : chowdsp::ParamHolder
     using ForwardingParams = chowdsp::ForwardingParametersManager<ParamForwardingProvider, num_forward_parameters>;
     std::optional<ForwardingParams> forwarding_params;
 
-    std::vector<chowdsp::FloatParameter::Ptr> float_params;
+    std::vector<chowdsp::MetricParameter::Ptr> float_params;
     std::vector<chowdsp::ChoiceParameter::Ptr> choice_params;
 
+    std::unique_ptr<chowdsp::ParamHolder> holder {};
     std::optional<chowdsp::ParameterListeners> param_listeners { std::nullopt };
     chowdsp::Broadcaster<void()> params_cleared {};
     chowdsp::Broadcaster<void()> params_added {};
+
 
     ModuleParams();
     void clear_all_params();

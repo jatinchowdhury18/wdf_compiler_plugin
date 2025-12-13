@@ -31,7 +31,7 @@ struct HotReloadedModule
 
     ModuleParams* params = nullptr;
 
-    void load_parameters() const;
+    void load_parameters();
 
     struct FileWatcher : chowdsp::FileListener
     {
@@ -51,7 +51,7 @@ struct HotReloadedModule
     ModuleConfig config;
     std::optional<FileWatcher> file_watcher;
 
-    using Create_Proc_Func = void* (*) ();
+    using Create_Proc_Func = void* (*) (char*);
     Create_Proc_Func create_proc_func = nullptr;
     using Destroy_Proc_Func = void (*) (void*);
     Destroy_Proc_Func destroy_proc_func = nullptr;
@@ -63,19 +63,12 @@ struct HotReloadedModule
     using Process_Proc_Func = void (*) (void*, float*, int);
     Process_Proc_Func process_proc_func = nullptr;
 
-    using Get_Num_Float_Params_Func = int (*)();
+    using Get_Num_Float_Params_Func = int (*)(void*);
     Get_Num_Float_Params_Func get_num_float_params_func = nullptr;
-    using Get_Float_Param_Info_Func = void (*) (int param_index, char (&name)[128], float& default_value, float& start, float& end, float& center);
+    using Get_Float_Param_Info_Func = void (*) (void*, int param_index, char* name, float* default_value, float* start, float* end, float* center);
     Get_Float_Param_Info_Func get_float_param_info_func = nullptr;
     using Set_Float_Param = void (*) (void*, int, float);
     Set_Float_Param set_float_param_func = nullptr;
-
-    using Get_Num_Choice_Params_Func = int (*)();
-    Get_Num_Choice_Params_Func get_num_choice_params_func = nullptr;
-    using Get_Choice_Param_Info_Func = void (*) (int param_index, char (&name)[128], char (&choices)[32][128], int& default_value);
-    Get_Choice_Param_Info_Func get_choice_param_info_func = nullptr;
-    using Set_Choice_Param = void (*) (void*, int index, int value);
-    Set_Choice_Param set_choice_param_func = nullptr;
 
     juce::dsp::ProcessSpec process_spec {};
     juce::DynamicLibrary dll {};
