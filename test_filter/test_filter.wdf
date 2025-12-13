@@ -15,4 +15,4 @@ outputs:
 V:C2
 
 meta:
-param:R2_value,100,10k,2k,4k
+param:R2_value,100,10k

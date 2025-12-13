@@ -5,15 +5,8 @@ String :: #import "String";
 Reflection :: #import "Reflection";
 Math :: #import "Math";
 
-// @TODO: don't hardcode these paths
-#if OS == {
-    case .MACOS;
-        Parser :: #import,file "/Users/jatin/ChowDSP/Research/WaveDigitalFilters/wdf_compiler/compiler/wdf_parser.jai";
-    case .WINDOWS;
-        Parser :: #import,file "/Users/jatin/ChowDSP/Research/WaveDigitalFilters/wdf_compiler/compiler/wdf_parser.jai";
-}
-
-#load "test_filter.jai"; // @TODO: we could have this automated?
+Parser :: #import "wdf_parser";
+Circuit:: #import,file "circuit.jai";
 
 Param_Info :: struct {
     name: string;
@@ -47,7 +40,7 @@ parse_param_info :: (wdf_file: string, proc: *Processor) -> [..] Param_Info {
             for token : circuit_tokens {
                 for param_name : token.param_names {
                     if param_name == param_meta[0] {
-                        field_info := Reflection.get_struct_field_info(type_info(Params), param_name);
+                        field_info := Reflection.get_struct_field_info(type_info(Circuit.Params), param_name);
                         assert(field_info != null);
                         reference = cast(*float)(cast(*u8)(*proc.params) + field_info.offset_in_bytes);
                         break token;
@@ -76,11 +69,11 @@ parse_param_info :: (wdf_file: string, proc: *Processor) -> [..] Param_Info {
 }
 
 Processor :: struct {
-    impedances: Impedances;
-    state: State;
+    impedances: Circuit.Impedances;
+    state: Circuit.State;
     fs: float;
 
-    params: Params;
+    params: Circuit.Params;
     param_info: [..] Param_Info;
 }
 
@@ -104,10 +97,10 @@ reset :: (processor: *void) #c_call {
 process :: (processor: *void, data: *float, N: int) #c_call {
     push_context {
         proc := cast(*Processor) processor;
-        calc_impedances(*proc.impedances, proc.fs, proc.params);
+        Circuit.calc_impedances(*proc.impedances, proc.fs, proc.params);
 
         for n : 0..(N-1) {
-            data[n] = process(*proc.state, *proc.impedances, data[n]);
+            data[n] = Circuit.process(*proc.state, *proc.impedances, data[n]);
         }
     }
 }

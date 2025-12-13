@@ -13,38 +13,47 @@ constexpr auto get_num_float_params_tag = "get_num_float_params"_sl;
 constexpr auto get_float_param_info_tag = "get_float_param_info"_sl;
 constexpr auto set_float_param_tag = "set_float_param"_sl;
 
-auto get_wdf_source_path (const ModuleConfig& config)
+static auto get_name (const ModuleConfig& config)
+{
+    const auto module_dir = juce::File { config.module_dir };
+    return module_dir.getFileName();
+}
+
+static auto get_wdf_source_path (const ModuleConfig& config)
 {
     const auto module_dir = juce::File { config.module_dir };
     return module_dir.getChildFile (module_dir.getFileName()).withFileExtension ("wdf");
 }
 
-auto get_wdf_output_path (const ModuleConfig& config)
+static auto get_wdf_output_path (const ModuleConfig& config)
 {
     const auto module_dir = juce::File { config.module_dir };
-    return module_dir.getChildFile (module_dir.getFileName()).withFileExtension ("jai");
+    return module_dir.getChildFile ("circuit.jai");
 }
 
-auto get_jai_build_path (const ModuleConfig& config)
+static auto get_jai_build_path (const ModuleConfig& config)
 {
     const auto module_dir = juce::File { config.module_dir };
     return module_dir.getChildFile ("build.jai");
 }
 
-auto get_dll_bin_path (const ModuleConfig& config)
+static auto get_dll_bin_path (const ModuleConfig& config)
 {
     const auto module_dir = juce::File { config.module_dir };
     return module_dir.getChildFile (module_dir.getFileName()).withFileExtension ("dylib");
 }
 
-auto get_compile_command (const ModuleConfig& config)
+static auto get_compile_command (const ModuleConfig& config)
 {
     const auto wdf_compile_command = juce::String { config.wdf_compiler_path } + " "
                                      + get_wdf_source_path (config).getFullPathName()
                                      + " " + get_wdf_output_path (config).getFullPathName()
                                      + " -lang jai";
     const auto dll_compile_command = juce::String { config.jai_compiler_path }
-                                     + " " + get_jai_build_path (config).getFullPathName();
+                                     + " " + get_jai_build_path (config).getFullPathName()
+                                     + " -add \"CIRCUIT_NAME :: \\\"" + get_name (config) + "\\\"\""
+                                     + " -add \"COMPILER_DIR :: \\\"" + config.wdf_compiler_dir + "\\\"\"";
+    chowdsp::log ("{}", dll_compile_command);
     return wdf_compile_command + " && " + dll_compile_command;
 }
 
@@ -54,10 +63,12 @@ struct Command
     juce::String output {};
     std::chrono::duration<double> duration {};
 
-    explicit Command (const juce::String& cmd)
+    explicit Command (const ModuleConfig& config)
     {
-        // @TODO
-        const auto out_file = juce::File { "/Users/jatin/Desktop/wdf_compiler_out.txt" }; // ModuleConfig::config_file.getSiblingFile ("cmd_out.txt");
+        const auto cmd = get_compile_command (config);
+
+        const auto out_file = juce::File { config.module_dir }.getChildFile ("wdf_compiler_out.txt");
+        out_file.deleteFile();
         [[maybe_unused]] const auto _ = out_file.create();
         const auto full_cmd = cmd + " >" + out_file.getFullPathName();
 
@@ -108,7 +119,7 @@ void HotReloadedModule::dll_source_file_changed()
         close_dll();
     }
 
-    Command build_command { get_compile_command (config) };
+    Command build_command { config };
     chowdsp::log ("Compilation completed in {:.2f} seconds", build_command.duration.count());
 
     const auto exit_code = build_command.result;

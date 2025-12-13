@@ -19,6 +19,7 @@ void Plugin::update_config()
             .jai_compiler_path = config_json.value ("jai_compiler_path", std::string {}),
             .wdf_compiler_path = config_json.value ("wdf_compiler_path", std::string {}),
             .module_dir = config_json.value ("module_directory", std::string {}),
+            .wdf_compiler_dir = config_json.value ("wdf_compiler_dir", std::string {}),
         });
     }
     catch (const std::exception& e)

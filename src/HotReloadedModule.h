@@ -7,6 +7,7 @@ struct ModuleConfig
     std::string jai_compiler_path {};
     std::string wdf_compiler_path {};
     std::string module_dir {};
+    std::string wdf_compiler_dir {};
 };
 
 struct HotReloadedModule

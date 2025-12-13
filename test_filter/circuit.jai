@@ -1,5 +1,5 @@
 // Auto-generated with wdf_compiler version 0.1.0.ce3a1f8.
-// Command: wdf_compiler /Users/jatin/ChowDSP/Research/wdf_compiler_plugin/test_filter/test_filter.wdf /Users/jatin/ChowDSP/Research/wdf_compiler_plugin/test_filter/test_filter.jai -lang jai
+// Command: wdf_compiler /Users/jatin/ChowDSP/Research/wdf_compiler_plugin/test_filter/test_filter.wdf /Users/jatin/ChowDSP/Research/wdf_compiler_plugin/test_filter/circuit.jai -lang jai
 
 Params :: struct {
     C1_value : float : 1.0e-06;
