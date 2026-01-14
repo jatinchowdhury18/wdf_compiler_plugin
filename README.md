@@ -27,7 +27,10 @@ which can be accessed from the "Settings" menu. From here you can set the
 paths for the two compilers listed above, as well as the circuit that you
 want to have continuously reloaded.
 
+For an example of a circuit that can be hot_reloaded, see the `test_filter/`
+directory.
+
 ## License
 
-ChowProtoPlug is open source, and is licensed under the MIT license.
+wdf_compiler_plugin is open source, and is licensed under the MIT license.
 Enjoy!
