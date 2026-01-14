@@ -1,15 +1,6 @@
-# ChowProtoPlug
+# wdf_compiler_plugin
 
-ChowProtoPlug is a simple plugin for prototyping DSP code in C++.
-
-The plugin loads a "module" (a DLL with a simple pre-defined interface),
-and will continuously re-compile and re-load the module as you make changes
-to the module source code.
-
-At the moment, this plugin is primarily set up to work on my computer.
-I don't know how much effort it would take to get this system to work
-for any user, but this repository is open to pull requests if folks would
-like to contribute.
+This repository contains an audio plugin, meant to serve as an example and prototyping tool for the [`wdf_compiler`](https://github.com/Chowdhury-DSP/wdf_compiler) project.
 
 ## Building
 
@@ -17,8 +8,8 @@ To build from scratch, you must have CMake installed.
 
 ```bash
 # Clone the repository
-$ git clone https://github.com/Chowdhury-DSP/ChowProtoPlug.git
-$ cd ChowProtoPlug
+$ git clone https://github.com/jatinchowdhury18/wdf_compiler_plugin.git
+$ cd wdf_compiler_plugin
 
 # build with CMake
 $ cmake -Bbuild
@@ -27,12 +18,16 @@ $ cmake --build build --config Release
 
 ## Usage
 
+To use this plugin, you must first have the following installed:
+- A JAI compiler (currently tested with beta version 0.2.023)
+- `wdf_compiler`
+
 The first time you run the plugin, the plugin will create a config file,
 which can be accessed from the "Settings" menu. From here you can set the
-path for your CMake executable, and the module that you want to have
-continuously reloaded.
+paths for the two compilers listed above, as well as the circuit that you
+want to have continuously reloaded.
 
 ## License
 
-ChowProtoPlug is open source, and is licensed under the BSD 3-clause license.
+ChowProtoPlug is open source, and is licensed under the MIT license.
 Enjoy!
