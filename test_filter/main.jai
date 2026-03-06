@@ -8,6 +8,10 @@ Math :: #import "Math";
 Parser :: #import "wdf_parser";
 Circuit:: #import,file "circuit.jai";
 
+dll_context: #Context;
+dll_temporary_storage: Temporary_Storage;
+dll_temporary_storage_data: [TEMPORARY_STORAGE_SIZE] u8 #align 64;
+
 Param_Info :: struct {
     name: string;
     default: float;
@@ -24,7 +28,7 @@ parse_param_info :: (wdf_file: string, proc: *Processor) -> [..] Param_Info {
     assert(fread_success);
 
     sections := Parser.parse_file_sections (file_str);
-    circuit_tokens := Parser.parse_circuit(sections.circuit);
+    circuit_tokens := Parser.parse_circuit(sections.circuit,, temp);
     info_lines := String.split(sections.meta, cast(u8) #char "\n");
     for line : info_lines {
         line_trim := String.trim(line);
@@ -79,7 +83,7 @@ Processor :: struct {
 
 #program_export
 prepare :: (processor: *void, sample_rate: float64, samples_per_block: s32) #c_call {
-    push_context {
+    push_context dll_context {
         print("Preparing processor with sample rate: %, and buffer size: %", sample_rate, samples_per_block);
         (cast(*Processor) processor).fs = cast(float) sample_rate;
     }
@@ -88,14 +92,14 @@ prepare :: (processor: *void, sample_rate: float64, samples_per_block: s32) #c_c
 
 #program_export
 reset :: (processor: *void) #c_call {
-    push_context {
+    push_context dll_context {
         (cast(*Processor) processor).state = .{};
     }
 }
 
 #program_export
 process :: (processor: *void, data: *float, N: int) #c_call {
-    push_context {
+    push_context dll_context {
         proc := cast(*Processor) processor;
         Circuit.calc_impedances(*proc.impedances, proc.fs, proc.params);
 
@@ -107,7 +111,7 @@ process :: (processor: *void, data: *float, N: int) #c_call {
 
 #program_export
 get_num_float_params :: (processor: *void) -> int #c_call {
-    push_context {
+    push_context dll_context {
         proc := cast(*Processor) processor;
         return proc.param_info.count;
     }
@@ -121,7 +125,7 @@ get_float_param_info :: (processor: *void,
                          start: *float,
                          end: *float,
                          center: *float) #c_call {
-    push_context {
+    push_context dll_context {
         proc := cast(*Processor) processor;
         if param_index >= proc.param_info.count { return; }
         param_info := proc.param_info[param_index];
@@ -135,7 +139,7 @@ get_float_param_info :: (processor: *void,
 
 #program_export
 set_float_param :: (processor: *void, param_index: int, value: float) #c_call {
-    push_context {
+    push_context dll_context {
         proc := cast(*Processor) processor;
         if param_index >= proc.param_info.count { return; }
         proc.param_info[param_index].reference.* = value;
@@ -144,7 +148,11 @@ set_float_param :: (processor: *void, param_index: int, value: float) #c_call {
 
 #program_export
 create_processor :: (wdf_file_path: *u8) -> *void #c_call {
-    push_context {
+    initializer_of(#Context)(*dll_context);
+    ts := *dll_temporary_storage;
+    set_initial_data(ts, TEMPORARY_STORAGE_SIZE, dll_temporary_storage_data.data);
+    dll_context.temporary_storage = ts;
+    push_context dll_context {
         proc := New(Processor);
         proc.param_info = parse_param_info (to_string (wdf_file_path), proc);
         return proc;
@@ -153,7 +161,7 @@ create_processor :: (wdf_file_path: *u8) -> *void #c_call {
 
 #program_export
 delete_processor :: (processor: *void) #c_call {
-    push_context {
+    push_context dll_context {
         proc := cast(*Processor) processor;
         array_free(proc.param_info);
         free(proc);
